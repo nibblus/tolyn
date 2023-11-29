@@ -86,10 +86,6 @@ class List(list, Formatter):
         self.header = "HEAD"
 
 
-a = List([3,4], name = 'EEE')
-print(a.xml())
-a = Formatter(format_name="iets")
-print(a.xml())
 
 
 
