@@ -19,6 +19,7 @@
 import copy
 import os
 from typing import Optional
+from data.vector import Vector
 
 
 HTML_TABLE_LIMIT_DEFAULT = 50
@@ -31,7 +32,7 @@ class MatrixException(Exception):
     """
 
     def __init__(self, *args, **kwargs):
-        Exception.__init__(self, *args, **kwargs)
+        Exception.__init__(self, *args)
 
 
 class MatrixOutOfBoundsException(MatrixException):
