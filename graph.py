@@ -20,10 +20,7 @@ from data.matrix import Matrix
 from xml.etree import ElementTree
 
 
-def pop_keys(from_dict: dict, raise_if_not_empty: bool, *args):
-    for arg in args:
-        from_dict.pop(arg)
-    if raise_if_not_empty and len(from_dict): raise Exception(f"Dict is not empty: {from_dict} ")
+
 
 
 class Node:
@@ -78,20 +75,35 @@ class Graph:
 
     """
 
-    def __init__(self):
-        self.connectivity = Matrix()
+    def __init__(self, maintain_connectivity: bool = False):
+
+        self._connectivity = Matrix() if maintain_connectivity else None
         self.nodes = dict()
+        self.edge = dict()
+
+    @property
+    def connectivity(self):
+        return self._connectivity
+    @connectivity.setter
+    def connectivity(self, value: bool):
+        """
+
+        :param value:
+        :return:
+        """
+        raise NotImplemented()
+
 
     def add(self, *args) -> None:
         """
-        Add a node to the graph
+        Add a node or edge to the graph
         :param node:
         :return:
         """
         for arg in args:
             if isinstance(arg, Node):
-                if self.nodes.get(arg) is None:
-                    self.nodes[arg] = len(self.nodes)
+                if arg not in self.nodes is None:
+                    self.nodes = len(self.nodes)
                     self.connectivity.add_column()
                     self.connectivity.add_row([0 for i in range(self.connectivity.width())])
             elif isinstance(arg, Edge):
