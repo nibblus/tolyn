@@ -16,21 +16,19 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
        
 """
 
-PRINT = print
+import unittest
+from data.bucketlist import Bucket, BucketException
+
+class MyTestCase(unittest.TestCase):
+    def test_bucket(self):
+        b = Bucket()
+        self.assertEqual(False, b.store_values)
+        self.assertEqual(0, b.count())
+        self.assertEqual(0, b.total)
+        self.assertRaises(BucketException, b.avg)
+        self.assertRaises(BucketException, b.max)
+        self.assertRaises(BucketException, b.min)
 
 
-def ToBeTested(func):
-    """
-    Decorator to indicate a method is not yet tested
-    :param func: function to decorate
-    """
-
-    def inner(*args, **kwargs):
-        """
-        to pass args and kwargs
-        """
-        PRINT(f"{type(func)} {func} is still to be tested")
-        return func(*args, **kwargs)
-
-    return inner
-
+if __name__ == '__main__':
+    unittest.main()

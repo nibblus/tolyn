@@ -55,6 +55,9 @@ class Formatter:
     def str(self) -> str:
         return f"{self.__class__.__name__} : {vars(self)}"
 
+
+    def csv(self):
+        raise Exception()
     def html(self) -> str:
         return f"<P/>{self.str()}<P/>"
 
