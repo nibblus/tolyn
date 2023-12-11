@@ -16,12 +16,10 @@
 
 """
 
-import os
 from numbers import Number
-from testing.unit import ToBeTested
 
 
-class BucketException(Exception):
+class ContainerError(Exception):
     """
     Exception during bucket operations, typically when calling a method that can not operate on empty buckets
     """
@@ -29,35 +27,112 @@ class BucketException(Exception):
     pass
 
 
-class Bucket(list):
+class Container:
     """
-    Base bucket functionality
+    A container maintains statistical data about numerical data added to the container without storing the data itself
+    Values can be added to container
     """
 
-    def __init__(self, store_values=False) -> None:
-        list.__init__(self)
-        self._store_values = store_values
+    def __init__(self) -> None:
         self._total = 0
         self._count = 0
         self._min = None
         self._max = None
 
     def __repr__(self) -> str:
-        list_str = f": {super()}" if self._store_values else ""
-        return f"Bucket(#{self._count},T={self._total},min={self._min},max={self._max})  {list_str})"
+        return f"Container(#{self._count},T={self._total},m={self._min},M={self._max}))"
 
     def __len__(self) -> int:
-        if self._store_values:
-            return list.__len__(self)
-        else:
-            return self.count()
+        return self.count()
+
+    def __contains__(self, item):
+        raise NotImplementedError()
+
+    def __abs__(self):
+        raise NotImplementedError()
+
+    def __hex__(self):
+        return hex(self._total)
+
+    def __oct__(self):
+        return oct(self._total)
+
+    def __neg__(self):
+        return -self._total
+
+    def __pos__(self):
+        return self._total
+
+    def __int__(self):
+        return int(self._total)
 
     def __eq__(self, other):
         """
-        :type other: Bucket
+        :type other: Container
         """
-        if 
-        return self._total == other._total and self._count == other._count and self._min == other._min and self._max == other.max and self._store_values == other._store_values
+        return self._total == other._total and self._count == other._count and self._min == other._min and self._max == other.max
+
+    def __lt__(self, other):
+        """
+        :type other: Container
+        """
+        if self._total != other._total:
+            return self._total < other._total
+        return self._count < other._count
+
+    def __le__(self, other):
+        """
+        :type other: Container
+        """
+        return self.__eq__(other) or self._total < other._total or (self._total == other._total and self._total <= other._total)
+
+    def __gt__(self, other):
+        """
+        :type other: Container
+        """
+        if self._total != other._total:
+            return self._total > other._total
+        return self._count > other._count
+
+    def __ge__(self, other):
+        """
+        :type other: Container
+        """
+        return self.__eq__(other) or self._total > other._total or (self._total == other._total and self._total >= other._total)
+
+    def __bool__(self):
+        return self._total > 0
+
+    def __ceil__(self):
+        return self._total.__ceil__()
+
+    def __floor__(self):
+                return self._total.__floor__()
+
+    def __and__(self, other):
+        """
+        :type other: Container
+        """
+        return self._count > 0 and other._count > 0
+
+    def __or__(self, other):
+        """
+        :type other: Container
+        """
+        return self._count > 0 or other._count > 0
+
+    def __xor__(self, other):
+        """
+        :type other: Container
+        """
+
+        return (self._count > 0) ^ (other._count > 0)
+
+    def __sub__(self, other):
+        raise NotImplementedError()
+
+    def __add__(self,other):
+        raise NotImplementedError()
 
     def append(self, value: Number) -> None:
         """
@@ -102,8 +177,6 @@ class Bucket(list):
         """
         return self._count
 
-
-
     def min(self):
         """
         Get the minimal value
@@ -135,6 +208,119 @@ class Bucket(list):
             raise NotImplemented()
         if self._count == 0:
             self._min = other.min
+            self._max = other.max
+        elif other.count == 0:
+            pass
+        else:
+            self._min = min(self._min, other.min)
+            self._max = max(self._max, other.max)
+        self._count += other.count
+        self._total += other.total
+
+
+class Bucket(list):
+    """
+    Base bucket functionality
+    """
+
+    def __init__(self, store_values=False) -> None:
+        list.__init__(self)
+        self._store_values = store_values
+        self._total = 0
+        self._count = 0
+        self._min = None
+        self._max = None
+
+    def __repr__(self) -> str:
+        list_str = f": {super()}" if self._store_values else ""
+        return f"Bucket(#{self._count},T={self._total},min={self._min},max={self._max})  {list_str})"
+
+    def __len__(self) -> int:
+        if self._store_values:
+            return list.__len__(self)
+        else:
+            return self.count()
+
+    def __eq__(self, other):
+        """
+        :type other: Bucket
+        """
+        return self._total == other._total and self._count == other._count and self._min == other._min and self._max == other.max and self._store_values == other._store_values and (not  self._store_values or self.super() == other.super())
+
+    def append(self, value: Number) -> None:
+        """
+        Add a numeric value
+        :param value: Value to add
+        """
+        self._count += 1
+        self._total += value
+        if self._min is None or value < self._min:
+            self._min = value
+        if self._max is None or value > self._max:
+            self._max = value
+        if self.store_values:
+            super().append(value)
+
+    def assert_count(self) -> None:
+        """
+        Helper function that raises an Exception when count is 0.
+        This can be useful for functions that can not operate on empty buckets
+        """
+        if self._count == 0:
+            raise BucketException("Cannot operate on an empty bucket")
+
+    def store_values(self) -> book:
+        """
+        Get the store_values
+        :return: _store_values
+        """
+        return self._store_values
+
+    def total(self):
+        """
+        Get the total
+        :return: _total
+        """
+        return self._total
+
+    def count(self, *args, **kwargs):
+        """
+        Get the count
+        :return: _count
+        """
+        return self._count
+
+    def min(self):
+        """
+        Get the minimal value
+        :return:  _min
+        """
+        self.assert_count()
+        return self._min
+
+    def max(self):
+        """
+        Get the maximal value
+        :return:  _max
+        """
+        self.assert_count()
+        return self._max
+
+    def avg(self):
+        """
+        Get the average
+        :return: average
+        """
+        self.assert_count()
+        return self._total / self._count
+
+    def __add__(self, other):
+        if other is None:
+            raise NotImplemented()
+        if self._store_values != other.store_values:
+            raise NotImplemented()
+        if self._count == 0:
+            self._min = other._min
             self._max = other.max
         elif other.count == 0:
             pass

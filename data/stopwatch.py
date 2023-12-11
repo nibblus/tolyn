@@ -16,8 +16,16 @@
 
 """
 
-import datetime
+from datetime import datetime
+
 import os
+
+
+class StopwatchError(Exception):
+    """
+    Specific Error for stopwatch functionality
+    """
+    pass
 
 
 class Lap:
@@ -25,16 +33,18 @@ class Lap:
     Lap, like on a stopwatch
     """
 
-    def __init__(self, base, previous, start, name="") -> None:
+    def __init__(self, base: datetime, previous: datetime, start: datetime, name: str = "", pattern: str = "%x %X") -> None:
         self.base = base
         self.previous = previous
         self.start = start
         self.elapsed_since_start = start - base
         self.elapsed_since_previous = start - previous
         self.name = name
+        self.pattern = pattern
 
     def __repr__(self) -> str:
-        return f"LAP '{self.name:30}' clicked at {self.start}, absolute {self.elapsed_since_start}, relative: {self.elapsed_since_previous}"
+        name_text = '' if self.name is None or len(self.name) == 0 else f"'{self.name}'"
+        return f"LAP {name_text:30}' clicked at {self.start.strftime(self.pattern)}, absolute {self.elapsed_since_start.strftime(self.pattern)}, relative: {self.elapsed_since_previous.strftime(self.pattern)}"
 
     def indented_repr(self, indent: int) -> str:
         """
@@ -46,48 +56,77 @@ class Lap:
 
 class Stopwatch:
     """
-    Basic stopwatch functionality
+    Basic stopwatch functionality to measure time with intermediate intervals
+    A stopwatch has three buttons:
+    - START: resets the watch (start time and laps) and starts running
+    -  STOP: stop the watch
+    -   LAP: which stores an intermediate interval
     """
 
-    def __init__(self) -> None:
-        self.start = self.previous_click = datetime.datetime.now()
+    # TODO: If START is clicked after STOP then the stopwatch should leave a gap in the laps.
+
+    def __init__(self, align: bool = True, pattern: str = "%x %X") -> None:
+        """
+        Initialize the stopwatch:
+        - start time is set to now
+        - laps are emptied
+        :param align: If True laps: When printing all laps, the names will be right-filled with spaces until all names have the same length. Otherwise, the lap names will be printed as-is
+        :param pattern: timestamp format, see datetime.strftime()
+        """
+        self.start = self.previous = datetime.now()  # start time, time of the previous click on 'LAP'
+        self.stop = None  # if a stopwatch has been stopped, no further clicks are allowed
         self.laps = []
+        self.align = align
+        self.pattern = pattern
 
-    def __str__(self) -> str:
-        indent = max([len(lap.name) for lap in self.laps])
-        return os.linesep.join(self.lap_list(indent))
+    def __repr__(self) -> str:
+        width = max([len(lap.name) for lap in self.laps] or [0]) if self.align else 0
+        return os.linesep.join(self.lap_texts(width))
 
-    def lap_list(self, indent=0) -> list:
+    def lap_texts(self, width: int = 0) -> list:
         """
         Create list of lap descriptions
+        :param width: minimal width of the lap name
         """
-        ret = [f"Timer started at: {self.start}"]
+        ret = [f"Stopwatch started at: {self.start.strftime(self.pattern)}"]
         for lap in self.laps:
-            ret.append(f"{lap.indented_repr(indent)}")
+            ret.append(f"{lap.indented_repr(width)}")
+        if self.stop is not None:
+            ret.append(f"stopped a {self.start.strftime(self.pattern)}")
         return ret
-
-    def html(self) -> str:
-        """
-        HTML representaion of the stopwatch
-        """
-        return f""" {"<BR/>".join(self.lap_list())}"""
 
     def click_start(self) -> None:
         """
-        Reset the laps, set start time to now
+        Reset the stopwatch.
         """
-        self.start = self.previous_click = datetime.datetime.now()
-        self.laps = []
+        self.__init__()
 
-    def click(self, name="") -> None:
+    def click_lap(self, name: str = "", exact_time=None) -> None:
         """
-        Add a lap
-        :param name: Optional name of the lap
+        Click on the LAP button
+        :param name: Name of the lap
+        :param exact_time: Time to end the lap, if not provided 'now' will be used
         """
-        new_click_time = datetime.datetime.now()
-        lap = Lap(self.start, self.previous_click, new_click_time, name)
-        self.laps.append(lap)
-        self.previous_click = new_click_time
+        click_time = datetime.now() if exact_time is None else exact_time
+        if self.stop is not None:
+            raise StopwatchError("Watch is already stopped. Can not add laps")
+        self.laps.append(Lap(self.start, self.previous, click_time, name, self.pattern))
+        self.previous = click_time
+
+    def click_stop(self, name: str = ""):
+        """
+        Click on the STOP button
+        """
+        stop = datetime.now()
+        self.click_lap(name, stop)
+        self.stop = stop
+        self.previous = None
+
+    def html(self) -> str:
+        """
+        HTML representation of the stopwatch
+        """
+        return f"""{"<BR/>".join(self.lap_texts())}"""
 
 
 if __name__ == "__main__":
