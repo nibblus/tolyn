@@ -18,12 +18,20 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import unittest
 
-from data.matrix import Matrix
+from data.matrix import Table, TableException, TableOutOfBoundsException
 
 
 class MyTestCase(unittest.TestCase):
-    def test_matrix(self):
-        self.assertEqual(True, False)  # add assertion here
+    def test_table_init(self):
+        t = Table()
+        self.assertEqual(t, [])  # add assertion here
+        self.assertEqual("Table[]", t.__repr__())
+        self.assertRaises(TableOutOfBoundsException, Table, width=0)
+        t = Table(width=3)
+        self.assertEqual(t, [])  # add assertion here
+
+
+
 
 
 if __name__ == '__main__':

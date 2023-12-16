@@ -20,28 +20,361 @@ import copy
 import os
 from typing import Optional
 from data.vector import Vector
+from formatting.format import List
 
 
-HTML_TABLE_LIMIT_DEFAULT = 50
-ALLOWED_ROW_TYPES = [list, tuple]
-
-
-class MatrixException(Exception):
+class TableException(Exception):
     """
     Matrix specific exceptions
     """
 
-    def __init__(self, *args, **kwargs):
-        Exception.__init__(self, *args)
+    pass
 
 
-class MatrixOutOfBoundsException(MatrixException):
+class TableOutOfBoundsException(TableException):
     """
     Matrix specific exceptions
     """
 
-    def __init__(self, msg: str) -> None:
-        super().__init__(f"MatrixOutOfBoundsException: {msg}")
+    pass
+
+
+class Table(List):
+    """
+    A table is a list of list where every row has the same length and every nth element of a rox has the same time
+    """
+
+    def __init__(self, **kwargs) -> None:
+        """
+        Creates a two dimensional matrix
+        :param kwargs:
+            width, height (default 0), default_value (default None)
+        """
+        list.__init__(self)
+        width = kwargs.get('width')
+        if width is not None:
+            if width < 1:
+                raise TableOutOfBoundsException("width must be at least 1")
+            height = kwargs.get('height', 0)
+            default_value = kwargs.get('default_value', None)
+            for y in range(height):
+                self.append([default_value]* width)
+
+    def __repr__(self) -> str:
+        return f"Table[{os.linesep.join(self)}]"
+
+    # Consistency checkers
+    @staticmethod
+    def check_type(value, raise_exception: bool = False) -> bool:
+        """
+        Verify if the value is a Table.
+        :param value: Value to check
+        :param raise_exception: raise an exception if the matrix is not initialized
+        :return: True if type is ok
+        """
+        if isinstance(value, Table):
+            return True
+        if raise_exception:
+            raise TableException(f"{value} is not of type Table")
+        return False
+
+    @staticmethod
+    def check_row_type(value, raise_exception: bool = False) -> bool:
+        """
+        Verify if type is ok. Typically, row must be a list or a tuple
+        :param value: Value to check
+        :param raise_exception: raise an exception if the matrix is not initialized
+        :return: True if type is ok
+        """
+        if isinstance(value, tuple) or isinstance(value, list):
+            return True
+        if raise_exception:
+            raise TableException("row is of wrong type")
+        return False
+
+    @staticmethod
+    def check_row(row, raise_exception: bool = False) -> bool:
+        """
+        Determine if type and length of a value or ok. Typically, row must be a list or a tuple. Length must be equal to the number of headers
+        :param row: value to check
+        :param raise_exception: raise an exception if the matrix is not initialized
+        :return: true is Matrix is not yet initialized
+        """
+        if not Matrix.check_row_type(row, raise_exception) or len(row) == 0:
+            return False
+
+    def __add__(self, other):
+        self.check_type(other, raise_exception=True)
+
+    # def within_row_range(self, *args, raise_exception: bool = False) -> bool:
+    #     """
+    #     Check if values are within the row range
+    #     :param raise_exception:
+    #     :param args:
+    #     :return:
+    #     """
+    #     for arg in args:
+    #         if not (0 <= arg < len(self._data)):
+    #             if raise_exception:
+    #                 raise MatrixOutOfBoundsException(f"row index {arg} out of bounds")
+    #             return False
+    #     return True
+    #
+    # def within_column_range(self, *args, raise_exception: bool = False) -> bool:
+    #     """
+    #     Check if args are in range of the matrix width
+    #     :param args: value
+    #     :param raise_exception: if True an exception will be raised in case of error
+    #     :return:
+    #     """
+    #     for arg in args:
+    #         if self._headers == [] or not (0 <= arg < len(self._headers)):
+    #             if raise_exception:
+    #                 raise MatrixOutOfBoundsException(f"col index {arg} out of bounds")
+    #             return False
+    #     return True
+    #
+    # def is_empty(self) -> bool:
+    #     """
+    #     Check if it contains data
+    #     :return: True if matrix contains no rows, False otherwise
+    #     """
+    #     return len(self)  == 0
+    #
+    # def contains_data(self) -> bool:
+    #     """
+    #     Check is matrix contains data
+    #     :return: True if matrix contains rows, False otherwise
+    #     :return:
+    #     """
+    #     return not self.is_empty()
+    #
+    # def dimensions(self) -> Vector:
+    #     """
+    #     Get the dimensions of the matrix
+    #     :return: (heigth, width)
+    #     """
+    #     return Vector(len(self._data), len(self._headers))
+    #
+    # # todo: unittest
+    # def add(self, other_matrix) -> None:
+    #     """
+    #     Add the data of another matrix
+    #     :param other_matrix: matrix to add
+    #     """
+    #     self._data += other_matrix._data
+    #
+    # def width(self) -> int:
+    #     """
+    #     Get width of the matrix
+    #     :return: width
+    #     """
+    #     length = len(self._headers)
+    #     if length > 0:
+    #         return length
+    #     raise MatrixException("Not initialized")
+    #
+    # # data getters and setters
+    # def set_headers(self, headers: list) -> None:
+    #     """
+    #     Set the headers of the matrix.
+    #     Note: Existing headers can only be updated if the new list has the same size or the matrix is still empty
+    #     :param headers: list of header
+    #     """
+    #     if len(self._data) == 0 or len(self._headers) == 0 or len(self._headers) == len(headers):
+    #         self._headers = strings.list_stringify(headers)
+    #     else:
+    #         raise MatrixException("Can not set headers: matrix is not empty or new size does not equal old size")
+    #
+    # def add_row(self, row: list) -> None:
+    #     """
+    #     Add a row to the matrix
+    #     :param row: Row to add
+    #     """
+    #     self.check_row(row, True)  # will throw exception in case of problems
+    #     if len(self._headers) != len(row):
+    #         if len(self._headers) == 0:
+    #             self.set_headers([x for x in range(len(row))])
+    #         raise MatrixOutOfBoundsException(f"row width ({len(row)} does not match header width {len(self._headers)}")
+    #     if type(row) == list:
+    #         self._data.append(row)
+    #     else:
+    #         self._data.append(list(row))
+    #
+    # def get_row(self, row_index: int):
+    #     """
+    #     Get a row from the matrix
+    #     :param row_index: index row
+    #     :return: specific row
+    #     """
+    #     self.within_row_range(row_index, True)
+    #     return self._data[row_index]
+    #
+    # # unit test ok
+    # def column(self, index: int = 0) -> list:
+    #     """
+    #     Get a column from the matrix
+    #     :param index: 0-index of the column.
+    #     :return: list containing the data of the selected column.
+    #     """
+    #     self.within_column_range(index, raise_exception=True)
+    #     column_list = []
+    #     for row in self._data:
+    #         column_list.append(row[index])
+    #     return column_list
+    #
+    # # calculators
+    # def column_function(self, functions):
+    #     """
+    #     Apply a function to each column, e.g. max, min
+    #     :return:  list of maxima, one for each column
+    #     """
+    #     ret = []
+    #     for i in range(len(self._headers)):
+    #         ret.append(functions(i))
+    #     return ret
+    #
+    # # unit test ok
+    # def column_max(self, column: int):
+    #     """
+    #     Get the maximum value in a column
+    #     : param column:  Index of the column
+    #     : return : Maximum value of the column
+    #     """
+    #     temp_max = self._data[0][column]
+    #     for i in range(len(self._data) - 1):
+    #         value = self._data[i + 1][column]
+    #         if value > temp_max:
+    #             temp_max = value
+    #     return temp_max
+    #
+    # # unit test ok
+    # def column_min(self, column: int):
+    #     """
+    #     Get the min value in a column
+    #     :param column:  Index of the column
+    #     :return : Minimum value of the column
+    #     """
+    #     temp_min = self._data[0][column]
+    #     for i in range(len(self._data) - 1):
+    #         value = self._data[i + 1][column]
+    #         if value < temp_min:
+    #             temp_min = value
+    #     return temp_min
+    #
+    # # unit test ok
+    # def minima(self):
+    #     """
+    #     Get the min value of all columns
+    #     :return : Minimum value of  all  columns
+    #     """
+    #     return self.column_function(self.column_min)
+    #
+    # # unit test ok
+    # def maxima(self):
+    #     """
+    #     Get the max value of all columns
+    #     :return : Max value of  all  columns
+    #     """
+    #     return self.column_function(self.column_max)
+    #
+    # # manipulators
+    # # unit test ok
+    # def swap_columns(self, first: int, second: int) -> None:
+    #     """
+    #     swap two columns
+    #     :param first: index of the first column
+    #     :param second: index of the second column
+    #     """
+    #     self.within_column_range(first, second)
+    #     temp = self._headers[first]
+    #     self._headers[first] = self._headers[second]
+    #     self._headers[second] = temp
+    #     for i in range(len(self._data)):
+    #         temp = self._data[i][first]
+    #         self._data[i][first] = self._data[i][second]
+    #         self._data[i][second] = temp
+    #
+    # # unittest ok
+    # def reverse(self) -> None:
+    #     """
+    #     reverse the order of rows in the matrix
+    #     """
+    #     if len(self._data) < 2:
+    #         return
+    #     for i in range(int(len(self._data) / 2) + 1):
+    #         index = len(self._data) - i - 1
+    #         temp = self._data[i]
+    #         self._data[i] = self._data[index]
+    #         self._data[index] = temp
+    #
+    # def delete_column(self, column: int) -> None:
+    #     """
+    #     delete a column from the matrix
+    #     :param column: column 0-based index of the column
+    #     """
+    #     self.within_column_range(column)
+    #     self._headers.pop(column)
+    #     for row in self._data:
+    #         row.pop(column)
+    #
+    # def add_column(self, column: Optional[int], header: str = "", initial=None) -> None:
+    #     """
+    #     Add a column to the matrix
+    #     :param column: column 0-based index of the column
+    #     :param header:
+    #     """
+    #     # todo : add error handling and argument documentation
+    #     self.within_column_range(column)
+    #     self._headers.insert(column, header)
+    #     for row in self._data:
+    #         row.insert(column, initial)
+    #
+    #
+    #
+    # # unit test ok
+    # def create_with_same_headers(self):
+    #     """
+    #     Create a new empty matrix with the same headers as the provided matrix
+    #
+    #     :return: Empty matrix (no rows) with same headers as the original
+    #     """
+    #     return Matrix(headers=copy.deepcopy(self._headers))
+    #
+    # def eliminate_doubles(self) -> None:
+    #     """
+    #     Eliminate subsequent identical rows from the matrix.
+    #     """
+    #     if len(self._data) < 2:
+    #         return
+    #     previous_row = self._data[0]
+    #     temp_data = [previous_row]
+    #     i = 1
+    #     while i < len(self._data):
+    #         current_row = self._data[i]
+    #         i += 1
+    #         if current_row == previous_row:
+    #             continue
+    #         temp_data.append(current_row)
+    #         previous_row = current_row
+    #     self._data = temp_data
+    #
+    #
+
+    # def height(self) -> int:
+    #     """
+    #     Get height of the matrix
+    #     :return:
+    #     """
+    #     return len(self)
+    #
+    # def minus(self, right):
+    #     """
+    #     Subtract two matrices
+    #     :param right: matrix to subtract
+    #     :return: Result of subtrction
+    #     """
+    #     return subtract(self, right)
 
 
 class Matrix:
@@ -427,7 +760,7 @@ class Matrix:
         """
         Add a column to the matrix
         :param column: column 0-based index of the column
-        :param header: 
+        :param header:
         """
         # todo : add error handling and argument documentation
         self.within_column_range(column)
